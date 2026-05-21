@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Camera Body Base -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M 34,28 A 12,12 0 0 0 22,40 L 22,76 A 12,12 0 0 0 34,88 L 74,88 A 12,12 0 0 0 86,76 L 86,40 A 12,12 0 0 0 74,28 Z" />
+        
+    <!-- Top Flash/Button Base of the Camera -->
+    <path
+        android:fillColor="#FFD93D"
+        android:pathData="M 46,21 Q 46,25 48,27 L 60,27 Q 62,25 62,21 Z" />
+        
+    <!-- Camera Lens Rim Inner -->
+    <path
+        android:strokeWidth="1.5"
+        android:strokeColor="#6BCB77"
+        android:fillColor="#00000000"
+        android:pathData="M 38,58 A 16,16 0 1 0 70,58 A 16,16 0 1 0 38,58 Z" />
+
+    <!-- Sleek Neon Pathway inside the lens -->
+    <path
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeColor="#FF6B6B"
+        android:fillColor="#00000000"
+        android:pathData="M 44,66 Q 54,60 54,54 Q 54,48 64,50" />
+
+    <!-- Lens Glass Reflection Accent -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 60,46 A 4,4 0 0 1 63,44 A 4,4 0 0 1 64,48 Z" />
+
+    <!-- Cute Red dot recording indicator -->
+    <path
+        android:fillColor="#FF6B6B"
+        android:pathData="M 76,38 A 2.5,2.5 0 1 0 81,38 A 2.5,2.5 0 1 0 76,38 Z" />
+</vector>
