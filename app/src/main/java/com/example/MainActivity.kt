@@ -22,6 +22,7 @@ import com.example.ui.AddMomentScreen
 import com.example.ui.HomeScreen
 import com.example.ui.OnboardingScreen
 import com.example.ui.ProjectDetailScreen
+import com.example.ui.StatsScreen
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -69,7 +70,17 @@ class MainActivity : ComponentActivity() {
                                 onProjectClick = { projectId ->
                                     navController.navigate("project_detail/$projectId")
                                 },
+                                onStatsClick = {
+                                    navController.navigate("stats")
+                                },
                                 snackbarHostState = snackbarHostState
+                            )
+                        }
+
+                        composable("stats") {
+                            StatsScreen(
+                                viewModel = viewModel,
+                                onBack = { navController.popBackStack() }
                             )
                         }
                         
@@ -91,7 +102,7 @@ class MainActivity : ComponentActivity() {
                             AddMomentScreen(
                                 viewModel = viewModel,
                                 onSaveSuccess = { navController.popBackStack() },
-                                onRetake = { navController.popBackStack() }
+                                onRetake = { /* Stay on screen; AddMomentScreen resets state internally */ }
                             )
                         }
                     }

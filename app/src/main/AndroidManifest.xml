@@ -35,6 +35,56 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Glance Widget Small (2x2) -->
+        <receiver
+            android:name=".widget.MomentWidgetSmallReceiver"
+            android:label="Locket Loop (Nhỏ 2x2)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/moment_widget_small_info" />
+        </receiver>
+
+        <!-- Glance Widget Medium (4x2) -->
+        <receiver
+            android:name=".widget.MomentWidgetMediumReceiver"
+            android:label="Locket Loop (Vừa 4x2)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/moment_widget_medium_info" />
+        </receiver>
+
+        <!-- Glance Widget Large (4x4) -->
+        <receiver
+            android:name=".widget.MomentWidgetLargeReceiver"
+            android:label="Locket Loop (Lớn 4x4)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/moment_widget_large_info" />
+        </receiver>
+
+        <!-- Widget Configuration Activity -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:label="Ghim dự án cho Widget"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

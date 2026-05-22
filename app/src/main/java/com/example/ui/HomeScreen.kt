@@ -2,7 +2,9 @@ package com.example.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,19 +31,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.JourneyViewModel
+import com.example.data.Moment
 import com.example.data.Project
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: JourneyViewModel,
     onProjectClick: (String) -> Unit,
+    onStatsClick: () -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
     val context = LocalContext.current
     val projects by viewModel.allProjects.collectAsStateWithLifecycle()
+    val moments by viewModel.allMoments.collectAsStateWithLifecycle()
     val remindersEnabled by viewModel.remindersEnabled.collectAsStateWithLifecycle()
+    val lang by viewModel.language.collectAsStateWithLifecycle()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -62,24 +72,41 @@ fun HomeScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.Map,
+                            imageVector = Icons.Default.AllInclusive,
                             contentDescription = null,
                             tint = Color(0xFF6BCB77),
                             modifier = Modifier.padding(end = 8.dp)
                         )
-                        Text(
-                            text = "JourneyLens",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontSize = 22.sp
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Moment",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontFamily = FontFamily.SansSerif,
+                                color = Color.White,
+                                fontSize = 23.sp
+                            )
+                            Text(
+                                text = "Loop",
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.SansSerif,
+                                color = Color(0xFF6BCB77),
+                                fontSize = 23.sp
+                            )
+                        }
                     }
                 },
                 actions = {
+                    IconButton(onClick = onStatsClick) {
+                        Icon(
+                            imageVector = Icons.Default.BarChart,
+                            contentDescription = Trans.t("stats", lang),
+                            tint = Color.LightGray
+                        )
+                    }
                     IconButton(onClick = { showSettingsDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Thiết lập",
+                            contentDescription = Trans.t("settings", lang),
                             tint = Color.LightGray
                         )
                     }
@@ -99,12 +126,12 @@ fun HomeScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Tạo hành trình mới",
+                    contentDescription = Trans.t("new_journey", lang),
                     modifier = Modifier.size(28.dp)
                 )
             }
         },
-        containerColor = Color(0xFF121212)
+        containerColor = Color(0xFF141414)
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -112,10 +139,8 @@ fun HomeScreen(
                 .padding(innerPadding)
         ) {
             if (projects.isEmpty()) {
-                // Empty state
-                EmptyStateLayout(onCreateClick = { showCreateDialog = true })
+                EmptyStateLayout(lang = lang, onCreateClick = { showCreateDialog = true })
             } else {
-                // Grid layout
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier
@@ -125,14 +150,18 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     items(projects) { project ->
+                        val projectMoments = moments.filter { it.projectId == project.id }
+                        val latestMoment = projectMoments.maxByOrNull { it.createdAt }
+
                         ProjectGridCard(
                             project = project,
+                            latestMoment = latestMoment,
+                            lang = lang,
                             onClick = { onProjectClick(project.id) }
                         )
                     }
-                    // Bottom Spacer so the FAB doesn't overlay elements completely
                     item {
-                        Spacer(modifier = Modifier.height(80.dp))
+                        Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
             }
@@ -142,20 +171,25 @@ fun HomeScreen(
     // Dialog: Create Project
     if (showCreateDialog) {
         CreateProjectDialog(
+            lang = lang,
             onDismiss = { showCreateDialog = false },
-            onCreate = { title, colorHex ->
-                viewModel.createProject(title, colorHex)
+            onCreate = { title, colorHex, bgPreset, startHour, endHour ->
+                viewModel.createProject(title, colorHex, bgPreset, startHour, endHour)
                 showCreateDialog = false
             }
         )
     }
 
-    // Dialog: Settings Reminder
+    // Dialog: Settings & Language Change
     if (showSettingsDialog) {
         SettingsDialog(
+            lang = lang,
             remindersEnabled = remindersEnabled,
             onToggleReminder = { enabled ->
                 viewModel.toggleReminder(enabled, context)
+            },
+            onToggleLanguage = { newLang ->
+                viewModel.setLanguage(newLang)
             },
             onDismiss = { showSettingsDialog = false }
         )
@@ -163,7 +197,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun EmptyStateLayout(onCreateClick: () -> Unit) {
+fun EmptyStateLayout(lang: String, onCreateClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -188,7 +222,7 @@ fun EmptyStateLayout(onCreateClick: () -> Unit) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Bắt đầu hành trình mới",
+            text = Trans.t("empty_state_title", lang),
             color = Color.White,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
@@ -198,7 +232,7 @@ fun EmptyStateLayout(onCreateClick: () -> Unit) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Nhấp vào nút bên dưới để khởi tạo mục tiêu của bạn (ví dụ: Tập thể dục, Lập trình, Nấu ăn...)",
+            text = Trans.t("empty_state_desc", lang),
             color = Color.LightGray,
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
@@ -220,7 +254,7 @@ fun EmptyStateLayout(onCreateClick: () -> Unit) {
                 modifier = Modifier.padding(end = 8.dp)
             )
             Text(
-                text = "Tạo hành trình ngay",
+                text = Trans.t("empty_state_btn", lang),
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
             )
@@ -231,6 +265,8 @@ fun EmptyStateLayout(onCreateClick: () -> Unit) {
 @Composable
 fun ProjectGridCard(
     project: Project,
+    latestMoment: Moment?,
+    lang: String,
     onClick: () -> Unit
 ) {
     val themeColor = runCatching { Color(android.graphics.Color.parseColor(project.thumbnailColor)) }
@@ -241,64 +277,129 @@ fun ProjectGridCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
-            // Visual Color thumbnail header
+            // Visual Color thumbnail header with fallback / preset
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(96.dp)
+                    .height(100.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(themeColor.copy(alpha = 0.85f), themeColor.copy(alpha = 0.4f))
-                        )
-                    )
-                    .padding(8.dp),
-                contentAlignment = Alignment.TopEnd
+                    .background(Color(0xFF222222))
             ) {
-                if (project.streak > 0) {
-                    Row(
-                        modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Whatshot,
-                            contentDescription = "Streak",
-                            tint = Color(0xFFFF9800),
-                            modifier = Modifier.size(16.dp)
+                // Determine background display style:
+                // 1. If we have a captured moment image, display it prominently!
+                if (latestMoment != null) {
+                    val isPlaceholder = latestMoment.imageUri.startsWith("placeholder_")
+                    if (isPlaceholder) {
+                        val fallbackGrad = when (latestMoment.imageUri) {
+                            "placeholder_red" -> listOf(Color(0xFFE57373), Color(0xFFC62828))
+                            "placeholder_green" -> listOf(Color(0xFF81C784), Color(0xFF2E7D32))
+                            "placeholder_blue" -> listOf(Color(0xFF64B5F6), Color(0xFF1565C0))
+                            "placeholder_yellow" -> listOf(Color(0xFFFFF176), Color(0xFFF9A825))
+                            "placeholder_purple" -> listOf(Color(0xFFBA68C8), Color(0xFF6A1B9A))
+                            "placeholder_pink" -> listOf(Color(0xFFF06292), Color(0xFFAD1457))
+                            "placeholder_orange" -> listOf(Color(0xFFFFB74D), Color(0xFFE65100))
+                            "placeholder_teal" -> listOf(Color(0xFF4DB6AC), Color(0xFF00695C))
+                            else -> listOf(Color(0xFF7986CB), Color(0xFF283593))
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Brush.linearGradient(fallbackGrad))
                         )
-                        Spacer(modifier = Modifier.width(3.dp))
+                    } else {
+                        AsyncImage(
+                            model = File(latestMoment.imageUri),
+                            contentDescription = "Latest Moment Preview",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    // Scrim
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Black.copy(alpha = 0.3f), Color.Black.copy(alpha = 0.6f))
+                                )
+                            )
+                    )
+
+                    // Latest indicator overlay tag
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(6.dp)
+                            .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
                         Text(
-                            text = "${project.streak} d",
-                            color = Color.White,
-                            fontSize = 11.sp,
+                            text = Trans.t("latest_moment_preview", lang),
+                            color = themeColor,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                } else {
+                    // Fall back to preset design style or dynamic gradient
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(ThemePresets.getPresetCardBrush(project.backgroundImageUri, themeColor))
+                    )
+                }
+
+                // Streaks Badge
+                if (project.streak > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Whatshot,
+                                contentDescription = "Streak",
+                                tint = Color(0xFFFF9800),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "${project.streak} d",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = project.title,
                 color = Color.White,
-                fontSize = 17.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Progress indicator details
             Row(
@@ -307,14 +408,14 @@ fun ProjectGridCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Tiến trình",
+                    text = Trans.t("progress", lang),
                     color = Color.Gray,
-                    fontSize = 12.sp
+                    fontSize = 11.sp
                 )
                 Text(
                     text = "${project.progressPercent}%",
                     color = themeColor,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -325,7 +426,7 @@ fun ProjectGridCard(
                 progress = { project.progressPercent.toFloat() / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.dp)
+                    .height(5.dp)
                     .clip(CircleShape),
                 color = themeColor,
                 trackColor = Color(0xFF2E2E2E)
@@ -336,12 +437,31 @@ fun ProjectGridCard(
 
 @Composable
 fun CreateProjectDialog(
+    lang: String,
     onDismiss: () -> Unit,
-    onCreate: (title: String, colorHex: String) -> Unit
+    onCreate: (title: String, colorHex: String, bgPreset: String?, startHour: Int, endHour: Int) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
-    val colors = listOf("#FF6B6B", "#FFD93D", "#6BCB77", "#4A90E2", "#9C27B0")
+    var startHour by remember { mutableStateOf(0) }
+    var endHour by remember { mutableStateOf(23) }
+    
+    // Expanding the colors to 10 beautiful professional gradient pastels
+    val colors = listOf(
+        "#FF6B6B", "#FFD93D", "#6BCB77", "#4A90E2", "#9C27B0",
+        "#FF9F43", "#00B894", "#0984E3", "#E84393", "#6C5CE7"
+    )
     var selectedColor by remember { mutableStateOf(colors.first()) }
+
+    // Selectable artistic preset background options
+    val presets = listOf(
+        "preset_none",
+        "preset_fitness",
+        "preset_productivity",
+        "preset_cooking",
+        "preset_spark",
+        "preset_nature"
+    )
+    var selectedPreset by remember { mutableStateOf(presets.first()) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -349,24 +469,24 @@ fun CreateProjectDialog(
             color = Color(0xFF1E1E1E),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.padding(20.dp)
             ) {
                 Text(
-                    text = "Hành trình mới",
+                    text = Trans.t("new_journey", lang),
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Tên hành trình (ví dụ: Gym)") },
+                    label = { Text(Trans.t("journey_title", lang)) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -377,26 +497,29 @@ fun CreateProjectDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "Chọn màu chủ đề",
+                    text = Trans.t("choose_theme", lang),
                     color = Color.LightGray,
-                    fontSize = 14.sp
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
+                // Scrollable color palettes layout matching M3 design specifications
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    colors.forEach { hex ->
+                    val firstRowColors = colors.take(5)
+                    firstRowColors.forEach { hex ->
                         val color = Color(android.graphics.Color.parseColor(hex))
                         val isSelected = selectedColor == hex
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
                                 .background(color)
                                 .clickable { selectedColor = hex }
@@ -406,15 +529,51 @@ fun CreateProjectDialog(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(Color.Transparent, CircleShape)
-                                        .padding(4.dp),
+                                        .background(Color.Transparent, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
                                         tint = Color.Black,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val secondRowColors = colors.drop(5)
+                    secondRowColors.forEach { hex ->
+                        val color = Color(android.graphics.Color.parseColor(hex))
+                        val isSelected = selectedColor == hex
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .clickable { selectedColor = hex }
+                                .padding(2.dp)
+                        ) {
+                            if (isSelected) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Transparent, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = Color.Black,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
@@ -422,25 +581,139 @@ fun CreateProjectDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = Trans.t("bg_preset", lang),
+                    color = Color.LightGray,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Display background presets as beautifully structured chips
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    presets.chunked(2).forEach { rowPresets ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            rowPresets.forEach { presetKey ->
+                                val isSelected = selectedPreset == presetKey
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(
+                                            if (isSelected) Color(0xFF6BCB77).copy(alpha = 0.15f)
+                                            else Color(0xFF2A2A2A)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) Color(0xFF6BCB77) else Color.Transparent,
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable { selectedPreset = presetKey }
+                                        .padding(vertical = 10.dp, horizontal = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = Trans.t(presetKey, lang),
+                                        color = if (isSelected) Color(0xFF6BCB77) else Color.LightGray,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = Trans.t("widget_time_settings", lang),
+                    color = Color.LightGray,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = Trans.t("widget_time_desc", lang),
+                    color = Color.Gray,
+                    fontSize = 11.sp
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${Trans.t("start_hour", lang)}: ${startHour}h",
+                            color = Color(0xFF6BCB77),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Slider(
+                            value = startHour.toFloat(),
+                            onValueChange = { startHour = it.toInt() },
+                            valueRange = 0f..23f,
+                            steps = 22,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(0xFF6BCB77),
+                                activeTrackColor = Color(0xFF6BCB77),
+                                inactiveTrackColor = Color(0xFF444444)
+                            )
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${Trans.t("end_hour", lang)}: ${endHour}h",
+                            color = Color(0xFFFFD93D),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Slider(
+                            value = endHour.toFloat(),
+                            onValueChange = { endHour = it.toInt() },
+                            valueRange = 0f..23f,
+                            steps = 22,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(0xFFFFD93D),
+                                activeTrackColor = Color(0xFFFFD93D),
+                                inactiveTrackColor = Color(0xFF444444)
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Huỷ", color = Color.Gray)
+                        Text(Trans.t("cancel", lang), color = Color.Gray)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Button(
                         onClick = {
                             if (title.isNotBlank()) {
-                                onCreate(title, selectedColor)
+                                onCreate(title, selectedColor, selectedPreset, startHour, endHour)
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6BCB77))
                     ) {
-                        Text("Tạo", color = Color.Black, fontWeight = FontWeight.Bold)
+                        Text(Trans.t("create", lang), color = Color.Black, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -450,8 +723,10 @@ fun CreateProjectDialog(
 
 @Composable
 fun SettingsDialog(
+    lang: String,
     remindersEnabled: Boolean,
     onToggleReminder: (Boolean) -> Unit,
+    onToggleLanguage: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -466,7 +741,7 @@ fun SettingsDialog(
                 modifier = Modifier.padding(24.dp)
             ) {
                 Text(
-                    text = "Thiết lập",
+                    text = Trans.t("settings", lang),
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -474,6 +749,7 @@ fun SettingsDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // Option 1: Daily reminders
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -481,18 +757,19 @@ fun SettingsDialog(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Nhắc nhở hàng ngày",
+                            text = Trans.t("daily_reminder", lang),
                             color = Color.White,
-                            fontSize = 16.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Nhận thông báo thúc đẩy lúc 20:00 hằng ngày cho hành trình thụt lùi",
-                            color = Color.LightGray,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp
+                            text = Trans.t("reminder_desc", lang),
+                            color = Color.Gray,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
                         )
                     }
+                    Spacer(modifier = Modifier.width(10.dp))
                     Switch(
                         checked = remindersEnabled,
                         onCheckedChange = { onToggleReminder(it) },
@@ -500,6 +777,85 @@ fun SettingsDialog(
                             checkedThumbColor = Color(0xFF6BCB77)
                         )
                     )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Divider(color = Color.White.copy(alpha = 0.08f))
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Option 2: Language Switching Configs
+                Text(
+                    text = Trans.t("language", lang),
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Vietnamese switch
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (lang == "vi") Color(0xFF6BCB77).copy(alpha = 0.15f)
+                                else Color(0xFF2A2A2A)
+                            )
+                            .border(
+                                1.dp,
+                                if (lang == "vi") Color(0xFF6BCB77) else Color.Transparent,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { onToggleLanguage("vi") }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "🇻🇳 ", fontSize = 14.sp)
+                            Text(
+                                text = "Tiếng Việt",
+                                color = if (lang == "vi") Color(0xFF6BCB77) else Color.LightGray,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // English switch
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (lang == "en") Color(0xFF6BCB77).copy(alpha = 0.15f)
+                                else Color(0xFF2A2A2A)
+                            )
+                            .border(
+                                1.dp,
+                                if (lang == "en") Color(0xFF6BCB77) else Color.Transparent,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { onToggleLanguage("en") }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "🇬🇧 ", fontSize = 14.sp)
+                            Text(
+                                text = "English",
+                                color = if (lang == "en") Color(0xFF6BCB77) else Color.LightGray,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -512,7 +868,7 @@ fun SettingsDialog(
                         onClick = onDismiss,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6BCB77))
                     ) {
-                        Text("Xong", color = Color.Black, fontWeight = FontWeight.Bold)
+                        Text(Trans.t("done", lang), color = Color.Black, fontWeight = FontWeight.Bold)
                     }
                 }
             }

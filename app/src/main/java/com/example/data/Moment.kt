@@ -24,5 +24,7 @@ data class Moment(
     val projectId: String,
     val imageUri: String,
     val noteText: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val aiScore: Int = 4,
+    val aiFeedback: String = "Tiếp tục duy trì và nỗ lực hằng ngày nhé!"
 )

@@ -5,6 +5,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MomentDao {
+    @Query("SELECT * FROM moments ORDER BY createdAt DESC")
+    fun getAllMomentsFlow(): Flow<List<Moment>>
+
     @Query("SELECT * FROM moments WHERE projectId = :projectId ORDER BY createdAt DESC")
     fun getMomentsForProjectFlow(projectId: String): Flow<List<Moment>>
 

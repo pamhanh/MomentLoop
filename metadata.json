@@ -1,5 +1,5 @@
 {
-  "name": "JourneyLens",
+  "name": "MomentLoop",
   "description": "A personal journey tracker app that tracks your daily growth in categories like fitness, work, and cooking, powered by Gemini AI feedback.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -67,7 +67,7 @@ class ReminderWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = "JourneyLens"
+        val title = "MomentLoop"
         val body = "Don't forget your ${project.title} journey — snap a moment today! 📸"
 
         val notification = NotificationCompat.Builder(applicationContext, channelId)

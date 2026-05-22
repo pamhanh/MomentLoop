@@ -39,7 +39,7 @@ fun OnboardingScreen(
 
     val pages = listOf(
         OnboardingPageData(
-            title = "Chào mừng tới JourneyLens",
+            title = "Chào mừng tới MomentLoop",
             subtitle = "Ghi lại cuộc hành trình của bạn, từng khoảnh khắc ý nghĩa.",
             icon = Icons.Default.Map,
             gradient = listOf(Color(0xFF3F51B5), Color(0xFF2196F3))

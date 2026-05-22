@@ -7,6 +7,7 @@ class JourneyRepository(
     private val momentDao: MomentDao
 ) {
     val allProjectsFlow: Flow<List<Project>> = projectDao.getAllProjectsFlow()
+    val allMomentsFlow: Flow<List<Moment>> = momentDao.getAllMomentsFlow()
 
     suspend fun getAllProjects(): List<Project> {
         return projectDao.getAllProjects()
@@ -42,6 +43,10 @@ class JourneyRepository(
 
     suspend fun insertMoment(moment: Moment) {
         momentDao.insertMoment(moment)
+    }
+
+    suspend fun updateMoment(moment: Moment) {
+        momentDao.updateMoment(moment)
     }
 
     suspend fun deleteMoment(moment: Moment) {
