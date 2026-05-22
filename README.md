@@ -1,21 +1,43 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# MomentLoop
 
-# Run and deploy your AI Studio app
+MomentLoop is an Android personal growth tracker built around a simple daily loop:
+create a journey, capture a moment, add a note, get Gemini-powered feedback, and
+keep the habit visible through home-screen widgets.
 
-This contains everything you need to run your app locally.
+## Highlights
 
-View your app in AI Studio: https://ai.studio/apps/b7336d94-12f2-49eb-9efa-aff72bba921e
+- Journey tracking with progress, streaks, and saved moments.
+- Camera/image support for richer daily check-ins.
+- Gemini feedback for progress scoring and coaching-style insights.
+- Home-screen widgets powered by Glance.
+- Local Room persistence and WorkManager refresh jobs.
+
+## Requirements
+
+- Android Studio with JDK 17.
+- Android SDK with the compile SDK required by the project.
+- A Gemini API key for AI features.
 
 ## Run Locally
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+1. Open the project in Android Studio.
+2. Copy `.env.example` to `.env`.
+3. Set `GEMINI_API_KEY` in `.env`.
+4. Sync Gradle and run the `app` configuration on an emulator or device.
 
+You can also build from the command line:
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+```bash
+./gradlew :app:assembleDebug
+```
+
+Run unit tests:
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+## Secrets
+
+Do not commit `.env`, keystores, or generated APKs. The debug build uses the
+default Android debug signing config, so no checked-in debug keystore is needed.
